@@ -30,19 +30,19 @@ Each step removes the application further from the secret. The progression is th
 
 ## Phases
 
-1. **Vault deployment** — Conjur, Postgres, and nginx via Docker Compose, self-signed TLS, CLI authentication.
-2. **Policy design** — three application branches, each scoped to a real function using a five-question framework:<br>
+1. **Vault deployment** - Conjur, Postgres, and nginx via Docker Compose, self-signed TLS, CLI authentication.
+2. **Policy design** - three application branches, each scoped to a real function using a five-question framework:<br>
    i) What is this identity's real job?<br>
    ii) What systems does that job require it to reach, and how does it authenticate to each?<br>
    iii) For each secret, does the identity need to read the secret, use the secret, or change the secret?<br>
    iv) Who owns this identity, and who is responsible for its lifecycle?<br>
    v) If this identity is compromised, is the damage proportional to its job?
-3. **Application onboarding** — direct API, Summon, and Secretless implementations.
-4. **Credential lifecycle** — manual rotation (and the drift window it creates), automated rotation with a scoped rotation identity, revocation, and break-glass access with post-use key rotation.
-5. **Kubernetes JWT authentication** — a pod authenticates to Conjur using its own service account token via the `authn-jwt` authenticator, built against CyberArk's own published reference architecture for this feature (see References below). No API key exists in the pod spec, environment, or a mounted secret at any point.
-6. **Governance documentation** — security controls matrix, onboarding and rotation runbooks, key custody procedure, break-glass procedure, secret inventory, and access matrix.
+3. **Application onboarding** - direct API, Summon, and Secretless implementations.
+4. **Credential lifecycle** - manual rotation (and the drift window it creates), automated rotation with a scoped rotation identity, revocation, and break-glass access with post-use key rotation.
+5. **Kubernetes JWT authentication** - a pod authenticates to Conjur using its own service account token via the `authn-jwt` authenticator, built against CyberArk's own published reference architecture for this feature (see References below). No API key exists in the pod spec, environment, or a mounted secret at any point.
+6. **Governance documentation** - security controls matrix, onboarding and rotation runbooks, key custody procedure, break-glass procedure, secret inventory, and access matrix.
 
-Full write-up of each phase, including the specific errors hit and how they were diagnosed, is in `/docs`.
+Full write up of each phase, including the specific errors hit and how they were diagnosed, is in `/docs`.
 
 ## A few of the sharper findings
 
@@ -88,4 +88,4 @@ This is a local, single instance lab. Self-signed certificates, a manually gener
 
 ## Author
 
-Bheki Nkomo — PAM and IAM professional, 20+ years in IT, currently focused on PAM/IAM engineering and identity governance.
+Bheki Nkomo - PAM and IAM professional, 20+ years in IT, currently focused on PAM/IAM engineering and identity governance.
