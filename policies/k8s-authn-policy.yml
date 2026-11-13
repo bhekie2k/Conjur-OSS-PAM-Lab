@@ -1,0 +1,33 @@
+- !policy
+  id: conjur/authn-jwt/k8s-cluster
+  body:
+    - !webservice
+    - !variable public-keys
+    - !variable issuer
+    - !variable token-app-property
+    - !variable identity-path
+    - !group consumers
+    - !permit
+      role: !group consumers
+      privilege: [ read, authenticate ]
+      resource: !webservice
+
+- !policy
+  id: prod
+  body:
+    - !policy
+      id: k8s-apps
+      body:
+        - !host
+          id: system:serviceaccount:billing-app:billing-sa
+          annotations:
+            authn-jwt/k8s-cluster/sub: system:serviceaccount:billing-app:billing-sa
+
+- !grant
+  role: !group conjur/authn-jwt/k8s-cluster/consumers
+  member: !host prod/k8s-apps/system:serviceaccount:billing-app:billing-sa
+
+- !permit
+  role: !host prod/k8s-apps/system:serviceaccount:billing-app:billing-sa
+  privileges: [ read, execute ]
+  resource: !variable prod/billing-app/db/password

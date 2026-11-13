@@ -1,0 +1,10 @@
+- !policy
+  id: prod
+  body:
+    - !policy
+      id: billing-app
+      body:
+        - !permit
+          role: !host billing-app-01
+          privileges: [ read, execute ]
+          resource: !variable db/password

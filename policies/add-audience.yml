@@ -1,0 +1,4 @@
+- !policy
+  id: conjur/authn-jwt/k8s-cluster
+  body:
+    - !variable audience

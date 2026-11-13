@@ -1,0 +1,9 @@
+- !host
+  id: k8s-system:serviceaccount:billing-app:billing-sa
+  annotations:
+    authn-jwt/k8s-cluster/sub: system:serviceaccount:billing-app:billing-sa
+
+- !permit
+  role: !host k8s-system:serviceaccount:billing-app:billing-sa
+  privileges: [ read, execute ]
+  resource: !variable dbpassword

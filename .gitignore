@@ -1,0 +1,22 @@
+# Conjur / lab secrets
+data_key
+admin_data
+conjur-server.pem
+*.pem
+*.key
+.conjurrc
+.netrc
+.rotation_env
+.env
+jwks.json
+rotation.log
+*.log
+
+# Python / local
+billing-lab-env/
+__pycache__/
+*.pyc
+*.bak
+
+# OS
+.DS_Store

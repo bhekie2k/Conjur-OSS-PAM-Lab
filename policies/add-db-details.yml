@@ -1,0 +1,9 @@
+- !policy
+  id: prod
+  body:
+    - !policy
+      id: billing-app
+      body:
+        - !variable db/host
+        - !variable db/port
+        - !variable db/username

@@ -1,0 +1,14 @@
+- !policy
+  id: prod
+  body:
+    - !policy
+      id: db-admin
+      annotations:
+        owner: Database Team
+      body:
+        - !variable rotator-password
+        - !host rotation-job-01
+        - !permit
+          role: !host rotation-job-01
+          privileges: [ read, execute ]
+          resource: !variable rotator-password

@@ -1,0 +1,26 @@
+- !policy
+  id: prod
+  body:
+    - !policy
+      id: break-glass
+      annotations:
+        owner: Security Operations
+        purpose: Emergency access only. All usage is logged and reviewed.
+      body:
+        - !host break-glass-01
+    - !permit
+      role: !host break-glass/break-glass-01
+      privileges: [ read, execute ]
+      resource: !variable billing-app/db/password
+    - !permit
+      role: !host break-glass/break-glass-01
+      privileges: [ read, execute ]
+      resource: !variable billing-app/api/stripe-key
+    - !permit
+      role: !host break-glass/break-glass-01
+      privileges: [ read, execute ]
+      resource: !variable operations-app/powerbi-connection-string
+    - !permit
+      role: !host break-glass/break-glass-01
+      privileges: [ read, execute ]
+      resource: !variable procurement-app/vendor-api-key

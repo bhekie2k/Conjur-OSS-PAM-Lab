@@ -1,0 +1,10 @@
+- !policy
+  id: prod
+  body:
+    - !policy
+      id: billing-app
+      body:
+        - !permit
+          role: !host /prod/db-admin/rotation-job-01
+          privileges: [ update ]
+          resource: !variable db/password
