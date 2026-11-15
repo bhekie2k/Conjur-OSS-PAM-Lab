@@ -24,7 +24,7 @@ Six containers form the vault stack (Conjur, Postgres, nginx, CLI client, pgAdmi
 |---|---|---|
 | Direct API | The application itself | Yes, in memory |
 | Summon | A launcher process, at startup | Briefly, as an injected environment variable |
-| Secretless Broker | A broker sitting in the connection path | No. The application connects to the broker believing it's the database |
+| Secretless Broker | A broker sitting in the connection path | No. Secretless Broker establishes the connection to the Target Service and then transmits data between the client and the target. |
 
 Each step removes the application further from the secret. The progression is the point.
 
@@ -37,7 +37,7 @@ Each step removes the application further from the secret. The progression is th
    iii) For each secret, does the identity need to read the secret, use the secret, or change the secret?<br>
    iv) Who owns this identity, and who is responsible for its lifecycle?<br>
    v) If this identity is compromised, is the damage proportional to its job?
-3. **Application onboarding** - direct API, Summon, and Secretless implementations.
+3. **Application onboarding** - direct API, Summon, and Secretless Broker implementations.
 4. **Credential lifecycle** - manual rotation (and the drift window it creates), automated rotation with a scoped rotation identity, revocation, and break-glass access with post-use key rotation.
 5. **Kubernetes JWT authentication** - a pod authenticates to Conjur using its own service account token via the `authn-jwt` authenticator, built against CyberArk's own published reference architecture for this feature (see References below). No API key exists in the pod spec, environment, or a mounted secret at any point.
 6. **Governance documentation** - security controls matrix, onboarding and rotation runbooks, key custody procedure, break-glass procedure, secret inventory, and access matrix.
