@@ -1,91 +1,98 @@
-# CyberArk Conjur Open Source PAM Lab
 
-A self-hosted secrets management lab built on Docker and WSL2. Deploys CyberArk Conjur Open Source, designs an onboarding policy and a least privilege access model for three simulated applications, implements three different secret delivery patterns, and adds credential lifecycle operations and Kubernetes native authentication on top.
-
-Every phase includes the problems encountered during the build and their root causes.
-
-## What this demonstrates
-
-- Deploying and operating a Conjur vault: policy design, RBAC permission scoping, audit logging.
-- Three patterns for getting a secret into an application, from the app holding the credential itself through to the application never seeing a credential at all.
-- Credential lifecycle operations: manual and automated rotation, revocation, break-glass access.
-- Kubernetes native workload identity: a pod authenticating to the vault using its own service account token.
-- Governance documentation mapped to ISO 27001, NIST SP 800-190, and CIS Docker Benchmark.
-
-## Architecture
-
-![Architecture diagram](docs/architecture.png)
-
-Six containers form the vault stack (Conjur, Postgres, nginx, CLI client, pgAdmin, a test utility container), plus a standalone Secretless Broker container and a `kind` Kubernetes cluster bridged onto the same Docker network.
-
-## The three onboarding patterns
-
-| Pattern | Who authenticates | Does the app hold the secret? |
+# CyberArk Conjur OSS PAM Lab
+ 
+A hands on lab demonstrating how to deploy CyberArk Conjur OSS, onboard application secrets, configure and manage credential delivery, rotation, revocation, break-glass access, and Kubernetes workload authentication. The lab also implements scoped policy, separation of duties, and the principle of least privilege.
+ 
+Three delivery patterns are used for the same application and database:
+ 
+- Direct API retrieval, where the application authenticates to Conjur, retrieves the secret, and holds it in memory.
+- Summon injection, where a launcher process authenticates to Conjur, retrieves the secret, and injects it into the application as an environment variable at startup.
+- Secretless Broker, where the broker terminates the application’s database connection, retrieves the database credential from Conjur, and uses it to connect to the database on the application’s behalf. The application never receives or holds the credential.
+## What this lab demonstrates
+ 
+| Control outcome | Implementation | Where to look |
 |---|---|---|
-| Direct API | The application itself | Yes, in memory |
-| Summon | A launcher process, at startup | Briefly, as an injected environment variable |
-| Secretless Broker | A broker sitting in the connection path | No. Secretless Broker establishes the connection to the Target Service and then transmits data between the client and the target. |
-
-Each step removes the application further from the secret. The progression is the point.
-
+| Platform deployment and configuration | A CyberArk Conjur OSS environment deployed using CyberArk’s public Conjur Quickstart configuration, including the Conjur server, PostgreSQL backing database, nginx TLS-terminating reverse proxy, Conjur account creation, master data key, administrative user access, and authenticator configuration | `compose/`, Technical Build Record |
+| Controlled emergency access | A scoped break-glass identity, audited use, and post-use key rotation | `policies/break-glass-policy.yml`, break-glass procedure in the Governance Documentation |
+| Policy and automation | Conjur policy as code, Python and Bash integration with the Conjur REST API, and Kubernetes integration | `apps/`, `scripts/`, `policies/` |
+| Scoped onboarding and least privilege | Three application identities provisioned through a five-question scoping gate, with access defined as Conjur policy | `policies/`, onboarding runbook in the Governance Documentation |
+| Reduced application exposure to secrets | Direct API retrieval, Summon injection, and Secretless Broker connection patterns | `apps/`, `secretless/` |
+| Credential rotation and revocation | Scripted rotation by a scoped identity that can change a password but cannot read it, with revocation tested on the next connection | `scripts/`, `policies/lifecycle/` |
+| Workload authentication without a stored API key | A Kubernetes pod authenticates to Conjur using its service-account JWT through the `authn-jwt` authenticator | `policies/k8s-authn-policy.yml`, `k8s/` |
+| Operational troubleshooting | Root-cause analysis of rotation, connectivity, TLS, and authentication failures from service and audit logs | Technical Build Record |
+| Governance artefacts | Control mappings, secret inventory, access matrix, and onboarding, rotation, key-custody, and break-glass procedures | `docs/` |
+ 
+## Architecture
+ 
+The vault stack consists of six containers: Conjur, PostgreSQL, nginx, the Conjur CLI client, pgAdmin, and a test utility container. A standalone Secretless Broker container and a kind Kubernetes cluster are bridged onto the same Docker network.
+ 
+![Architecture diagram](docs/architecture.png)
+ 
+## Secret delivery patterns
+ 
+| Pattern | Who authenticates | Does the application hold the secret? |
+|---|---|---|
+| Direct API | The application authenticates to Conjur | Yes, in memory |
+| Summon | The launcher process authenticates to Conjur | Briefly, as an injected environment variable |
+| Secretless Broker | The broker authenticates to Conjur; the application connects to the broker as though it were the database | No. The broker retrieves the credential and uses it to establish the database connection |
+ 
 ## Phases
-
-1. **Vault deployment** - Conjur, Postgres, and nginx via Docker Compose, self-signed TLS, CLI authentication.
-2. **Policy design** - three application branches, each scoped to a real function using a five-question framework:<br>
-   i) What is this identity's real job?<br>
-   ii) What systems does that job require it to reach, and how does it authenticate to each?<br>
-   iii) For each secret, does the identity need to read the secret, use the secret, or change the secret?<br>
-   iv) Who owns this identity, and who is responsible for its lifecycle?<br>
-   v) If this identity is compromised, is the damage proportional to its job?
-3. **Application onboarding** - direct API, Summon, and Secretless Broker implementations.
-4. **Credential lifecycle** - manual rotation (and the drift window it creates), automated rotation with a scoped rotation identity, revocation, and break-glass access with post-use key rotation.
-5. **Kubernetes JWT authentication** - a pod authenticates to Conjur using its own service account token via the `authn-jwt` authenticator, built against CyberArk's own published reference architecture for this feature (see References below). No API key exists in the pod spec, environment, or a mounted secret at any point.
-6. **Governance documentation** - security controls matrix, onboarding and rotation runbooks, key custody procedure, break-glass procedure, secret inventory, and access matrix.
-
-Full write up of each phase, including the specific errors hit and how they were diagnosed, is in `/docs`.
-
-## A few of the sharper findings
-
-- Conjur returns `404 Not Found`, not `403 Forbidden`, when an identity lacks permission on a secret. Deliberate: it prevents an attacker from confirming a path exists at all.
-- The Secretless Broker resolves credentials per connection. Rotating a credential requires no broker restart, but a revoked credential also takes effect on the very next connection attempt.
-- A JWT is not simply valid or invalid. It is validated against a specific set of claims (signature, issuer, audience), each of which can fail independently. An audience mismatch between the cluster's token and Conjur's expected value was the actual cause of an early 401 that looked, from the application side, identical to every other failure.
-- Self-signed certificate pinning is fragile by design. Every regeneration of the lab's certificate broke trust for the CLI and for the broker until it was explicitly re-pinned, which is the operational argument for CA-issued certificates with defined rotation in a real deployment.
-
+ 
+1. **Vault deployment**  
+   Conjur, PostgreSQL, and nginx deployed with Docker Compose, self-signed TLS, and Conjur CLI authentication.
+2. **Policy design**  
+   Three application branches scoped through a five-question framework:
+   - What is this identity’s function?
+   - What systems must it reach, and how does it authenticate to each?
+   - For each secret, does the identity need to read, use, or change it?
+   - Who owns the identity, and who is responsible for its lifecycle?
+   - If the identity is compromised, is the potential impact proportionate to its function?
+3. **Application onboarding**  
+   Direct API, Summon, and Secretless Broker implementations.
+4. **Credential lifecycle**  
+   Manual rotation and the drift window it creates, scripted rotation using a scoped rotation identity, revocation, and break-glass access with post-use key rotation.
+5. **Kubernetes JWT authentication**  
+   A pod authenticates to Conjur using its own service-account token through the `authn-jwt` authenticator. No API key exists in the pod specification, environment, or mounted secret.
+6. **Governance documentation**  
+   Security controls matrix, onboarding and rotation runbooks, key-custody procedure, break-glass procedure, secret inventory, and access matrix.
+Detailed build notes, including the specific errors encountered and how they were diagnosed, are in `/docs`.
+ 
 ## References
-
-The Kubernetes JWT authentication in Phase 5 follows CyberArk's own published documentation and reference implementation. It is not an independently derived approach.
-
-- [JWT-based Kubernetes authentication](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/k8s-ocp/k8s-jwt-authn.htm) — CyberArk's official Conjur OSS documentation. The policy structure used in this lab (service ID, the five authenticator variables, a consumer group, the `!permit` grant) follows their published example directly.
-- [cyberark/conjur-authn-k8s-client](https://github.com/cyberark/conjur-authn-k8s-client) — CyberArk's reference client implementation on GitHub.
-
-CyberArk's own documentation explicitly flags the `audience` claim as a security consideration. The mismatch described above under sharper findings is the failure mode their documentation warns about.
-
+ 
+The Kubernetes JWT authentication in Phase 5 follows CyberArk’s published documentation and reference implementation. It is not an independently derived approach.
+ 
+- [JWT-based Kubernetes authentication](https://docs.cyberark.com/conjur-open-source/latest/en/content/integrations/k8s-ocp/k8s-jwt-authn.htm) — CyberArk Conjur OSS documentation. The policy structure used in this lab, including the service ID, authenticator variables, consumer group, and `!permit` grant, follows CyberArk’s published example.
+- [cyberark/conjur-authn-k8s-client](https://github.com/cyberark/conjur-authn-k8s-client) — CyberArk’s reference authentication client for the Secrets Manager Kubernetes integration.
+CyberArk’s documentation identifies the audience claim as a security consideration. The audience mismatch described in the Technical Build Record is the failure mode that documentation warns about.
+ 
 ## Repository structure
-
-```
+ 
+```text
 Conjur-OSS-PAM-Lab/
 ├── docs/
 │   ├── Conjur_Lab_Technical_Build_Record.pdf
 │   ├── Conjur_Lab_Governance_Documentation.pdf
 │   └── architecture.png
-├── compose/          Docker Compose file for the vault stack
-├── policies/         Conjur policy files (apps, rotation, break-glass, k8s authenticator)
+├── compose/          Docker Compose configuration for the vault stack
+├── policies/         Conjur policy files: applications, rotation, break-glass, Kubernetes authenticator
 │   └── lifecycle/    Revoke and restore policies from Phase 4
-├── apps/             The three delivery patterns (direct API, Summon, Secretless) and secrets.yml for Summon
-├── secretless/       Secretless Broker config
-├── scripts/          Rotation script and the JWT demo
-├── k8s/              Test pod spec for Phase 5
+├── apps/             Direct API, Summon, and Secretless Broker implementations; Summon secrets.yml
+├── secretless/       Secretless Broker configuration
+├── scripts/          Rotation script and JWT demonstration
+├── k8s/              Test pod specification for Phase 5
 └── README.md
 ```
-
+ 
 ## Stack
-
-Docker, Docker Compose, WSL2, CyberArk Conjur OSS, Postgres, nginx, Summon, Secretless Broker, `kind`, Python (conjur-api SDK, psycopg2), Bash.
-
-## Scope and disclaimer
-
-This is a local, single instance lab. Self-signed certificates, a manually generated data key, and fake credential values throughout. The governance documentation names the specific gaps between this build and a production-grade deployment (HA, real CA-issued certificates, external KMS/HSM, CyberArk CPM, SIEM integration).
-
+ 
+Docker, Docker Compose, WSL2, CyberArk Conjur OSS, PostgreSQL, nginx, Summon, Secretless Broker, kind, Python (`conjur-api` SDK, `psycopg2`), and Bash.
+ 
+## Scope and limitations
+ 
+This is a local, single-instance lab. It uses self-signed certificates, a manually generated data key, and synthetic credential values.
+ 
+The governance documentation identifies the gaps between this build and a production-grade deployment, including high availability, CA-issued certificates, external KMS/HSM integration, CyberArk CPM, and SIEM integration.
+ 
 ## Author
-
-Bheki Nkomo - PAM and IAM professional, 20+ years in IT, currently focused on PAM/IAM engineering and identity governance.
+ 
+Bheki Nkomo — PAM and IAM professional focused on privileged access management, identity governance, cloud security, and security operations.
