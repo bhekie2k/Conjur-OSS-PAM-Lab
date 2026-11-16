@@ -1,18 +1,18 @@
 # CyberArk Conjur OSS PAM Lab
 
-A hands-on lab demonstrating how to deploy CyberArk Conjur OSS, onboard application secrets, configure and manage credential delivery, rotation, revocation, break-glass access, and Kubernetes workload authentication. The lab also implements scoped policy, separation of duties, and the principle of least privilege.
+A hands on lab demonstrating how to deploy CyberArk Conjur OSS, onboard application secrets, configure and manage credential delivery, rotation, revocation, break-glass access, and Kubernetes workload authentication. The lab also implements scoped policy, separation of duties, and the principle of least privilege.
 
-Three delivery patterns are used for the same application and database:
+Three secret delivery patterns are used for the same application and database:
 
 - Direct API retrieval, where the application authenticates to Conjur, retrieves the secret, and holds it in memory.
 - Summon injection, where a launcher process authenticates to Conjur, retrieves the secret, and injects it into the application as an environment variable at startup.
-- Secretless Broker, where the broker terminates the application’s database connection, retrieves the database credential from Conjur, and uses it to connect to the database on the application’s behalf. The application never receives or holds the credential.
+- Secretless Broker, where the application connects to the broker instead of the database. The broker authenticates to Conjur, retrieves the database credential, logs in to the database, and relays the traffic. The application never receives or holds the credential.
 
 ## What this lab demonstrates
 
 | Control outcome | Implementation | Where to look |
 |---|---|---|
-| Platform deployment and configuration | A CyberArk Conjur OSS environment deployed using CyberArk’s public Conjur Quickstart configuration, including the Conjur server, PostgreSQL backing database, nginx TLS-terminating reverse proxy, Conjur account creation, master data key, administrative user access, and authenticator configuration | [`compose/`](compose/), [Technical Build Record](docs/Conjur_Lab_Technical_Build_Record.pdf) |
+| Platform deployment and configuration | A CyberArk Conjur OSS environment deployed using CyberArk’s public Conjur Quickstart configuration, including the Conjur server, PostgreSQL backing database, nginx TLS terminating reverse proxy, Conjur account creation, master data key, administrative user access, and authenticator configuration | [`compose/`](compose/), [Technical Build Record](docs/Conjur_Lab_Technical_Build_Record.pdf) |
 | Controlled emergency access | A scoped break-glass identity, audited use, and post-use key rotation | [`policies/break-glass-policy.yml`](policies/break-glass-policy.yml), break-glass procedure in the [Governance Documentation](docs/Conjur_Lab_Governance_Documentation.pdf) |
 | Policy and automation | Conjur policy as code, Python and Bash integration with the Conjur REST API, and Kubernetes integration | [`apps/`](apps/), [`scripts/`](scripts/), [`policies/`](policies/) |
 | Scoped onboarding and least privilege | Three application identities provisioned through a five-question scoping gate, with access defined as Conjur policy | [`policies/`](policies/), onboarding runbook in the [Governance Documentation](docs/Conjur_Lab_Governance_Documentation.pdf) |
