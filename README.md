@@ -102,4 +102,4 @@ The governance documentation identifies the gaps between this build and a produc
 
 ## Author
 
-Bheki Nkomo — PAM and IAM professional focused on privileged access management, identity governance, cloud security, and security operations.
+Bheki Nkomo - PAM and IAM professional focused on privileged access management, identity governance, cloud security, and security operations.
