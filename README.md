@@ -61,7 +61,7 @@ The vault stack consists of six containers: Conjur, PostgreSQL, nginx, the Conju
 6. **Governance documentation**  
    Security controls matrix, onboarding and rotation runbooks, key-custody procedure, break-glass procedure, secret inventory, and access matrix.
 
-Detailed build notes, including the specific errors encountered and how they were diagnosed, are in `/docs`.
+Detailed build notes, including the specific errors encountered and how they were diagnosed, are in [`docs/`](docs/).
 
 ## References
 
